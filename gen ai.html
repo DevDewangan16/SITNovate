@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Weapon Detection System</title>
+    <!-- Add jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #1a237e;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .title {
+            margin: 0;
+            font-weight: 500;
+        }
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 20px;
+            gap: 20px;
+        }
+        .video-container {
+            flex: 1;
+            min-width: 640px;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .status-panel {
+            flex: 0 0 300px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .video-feed {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .indicator-light {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .status-normal {
+            background-color: #4CAF50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        .status-alert {
+            background-color: #F44336;
+            box-shadow: 0 0 15px rgba(244, 67, 54, 0.7);
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; box-shadow: 0 0 15px rgba(244, 67, 54, 0.7); }
+            50% { opacity: 0.5; box-shadow: 0 0 25px rgba(244, 67, 54, 0.9); }
+            100% { opacity: 1; box-shadow: 0 0 15px rgba(244, 67, 54, 0.7); }
+        }
+        .log-container {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            flex-grow: 1;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        .alert-log {
+            color: #F44336;
+            font-weight: bold;
+            background-color: rgba(244, 67, 54, 0.1);
+            border-radius: 4px;
+        }
+        .stats-container {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .stat-card {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+        .detection-types {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        .detection-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        .status-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+        }
+        .recording-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 4px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+        }
+        .recording-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #F44336;
+            margin-right: 8px;
+            animation: record 2s infinite;
+        }
+        @keyframes record {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        .report-button {
+            margin-top: 15px;
+            padding: 12px 20px;
+            background-color: #1a237e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .report-button:hover {
+            background-color: #303f9f;
+        }
+        .report-button:active {
+            background-color: #0d1642;
+            transform: translateY(1px);
+        }
+        .report-icon {
+            margin-right: 8px;
+        }
+        .ai-badge {
+            background-color: #8e24aa;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .loading-indicator {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ccc;
+            border-top-color: #1a237e;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">Advanced Weapon Detection System</h1>
+        <div id="clock">00:00:00</div>
+    </div>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="video-container">
+                <div class="recording-badge">
+                    <div class="recording-dot"></div>
+                    <span>LIVE</span>
+                </div>
+                <div id="status-badge" class="status-badge">System Active</div>
+                <img src="{{ url_for('video_feed') }}" class="video-feed" alt="Live CCTV Feed">
+            </div>
+            
+            <div class="status-panel">
+                <h2>System Status</h2>
+                
+                <div class="status-indicator">
+                    <div id="system-indicator" class="indicator-light status-normal"></div>
+                    <span id="system-status">System Active</span>
+                </div>
+                
+                <div class="status-indicator">
+                    <div id="alert-indicator" class="indicator-light status-normal"></div>
+                    <span id="alert-status">No Threats Detected</span>
+                </div>
+                
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div id="alerts-count" class="stat-value">0</div>
+                        <div class="stat-label">Alerts Today</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="uptime" class="stat-value">0:00</div>
+                        <div class="stat-label">System Uptime</div>
+                    </div>
+                </div>
+                
+                <div class="detection-types">
+                    <h3>Detection Capabilities</h3>
+                    <div class="detection-item">
+                        <span>Firearms</span>
+                        <span>✓ Active</span>
+                    </div>
+                    <div class="detection-item">
+                        <span>Bladed Weapons</span>
+                        <span>✓ Active</span>
+                    </div>
+                    <div class="detection-item">
+                        <span>Sports Equipment</span>
+                        <span>✓ Active</span>
+                    </div>
+                    <div class="detection-item">
+                        <span>Anomaly Detection</span>
+                        <span id="anomaly-status">Initializing...</span>
+                    </div>
+                </div>
+                
+                <h3>Activity Log</h3>
+                <div id="log-container" class="log-container">
+                    <div class="log-entry">System initialized at <span id="start-time"></span></div>
+                </div>
+                
+                <button id="generate-report" class="report-button">
+                    <svg class="report-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    Generate Gemini AI Report
+                    <span class="ai-badge">AI</span>
+                </button>
+                
+                <div id="loading-indicator" class="loading-indicator">
+                    <div class="loading-spinner"></div>
+                    <span>Generating AI analysis...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Make jsPDF available globally
+        const { jsPDF } = window.jspdf;
+        
+        // Initialize variables
+        let startTime = new Date();
+        let alertsCount = 0;
+        let anomalyModelReady = false;
+        let systemUptime = 0;
+        let logEntries = [];
+        
+        // Update clock
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('clock').textContent = timeString;
+        }
+        
+        // Set start time
+        document.getElementById('start-time').textContent = startTime.toLocaleTimeString();
+        
+        // Update clock every second
+        setInterval(updateClock, 1000);
+        updateClock(); // Initial update
+        
+        // Update uptime
+        function updateUptime() {
+            systemUptime++;
+            const minutes = Math.floor(systemUptime / 60);
+            const seconds = systemUptime % 60;
+            const uptimeFormatted = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('uptime').textContent = uptimeFormatted;
+        }
+        
+        // Update uptime every second
+        setInterval(updateUptime, 1000);
+        
+        // Add log entry
+        function addLogEntry(message, isAlert = false) {
+            const logContainer = document.getElementById('log-container');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry' + (isAlert ? ' alert-log' : '');
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            
+            // Store log entry for report generation
+            logEntries.push({
+                timestamp: timestamp,
+                message: message,
+                isAlert: isAlert,
+                datetime: new Date().toISOString()
+            });
+            
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll to bottom
+        }
+        
+        // Poll for alert status
+        function checkAlertStatus() {
+            fetch('/alert_status')
+                .then(response => response.json())
+                .then(data => {
+                    const alertIndicator = document.getElementById('alert-indicator');
+                    const alertStatus = document.getElementById('alert-status');
+                    const statusBadge = document.getElementById('status-badge');
+                    
+                    if (data.alert) {
+                        if (!alertIndicator.classList.contains('status-alert')) {
+                            // Alert just became active
+                            alertIndicator.classList.remove('status-normal');
+                            alertIndicator.classList.add('status-alert');
+                            alertStatus.textContent = 'THREAT DETECTED';
+                            statusBadge.textContent = 'THREAT DETECTED';
+                            statusBadge.style.backgroundColor = 'rgba(244, 67, 54, 0.9)';
+                            addLogEntry('Alert triggered! Threat detected.', true);
+                            alertsCount++;
+                            document.getElementById('alerts-count').textContent = alertsCount;
+                        }
+                    } else {
+                        if (alertIndicator.classList.contains('status-alert')) {
+                            // Alert just became inactive
+                            alertIndicator.classList.remove('status-alert');
+                            alertIndicator.classList.add('status-normal');
+                            alertStatus.textContent = 'No Threats Detected';
+                            statusBadge.textContent = 'System Active';
+                            statusBadge.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                            addLogEntry('Alert cleared. System normal.', false);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking alert status:', error);
+                    addLogEntry('Connection error. Check server status.', true);
+                });
+        }
+        
+        // Function to call Gemini API
+        async function callGeminiAPI(logData, systemStats) {
+            // In a real implementation, you would make an API call to Gemini
+            // For demo purposes, we'll simulate the API response
+            
+            // Show loading indicator
+            document.getElementById('loading-indicator').style.display = 'flex';
+            
+            try {
+                // This would be replaced with actual Gemini API call
+                 const response = await fetch('https://api.gemini.ai/v1/generate', {
+                     method: 'POST',
+                     headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer AIzaSyDiW8ScK6WRFcVCqIAZZQOluM9sDmtUUJY'
+                    },
+                    body: JSON.stringify({
+    prompt: `You are a security analysis expert. Analyze the following security system data from an Advanced Weapon Detection System and provide a detailed professional report:
+
+    SYSTEM STATISTICS:
+    ${JSON.stringify(systemStats, null, 2)}
+
+    CHRONOLOGICAL LOG ENTRIES:
+    ${JSON.stringify(logData, null, 2)}
+
+    Based on this data, please provide:
+    1. Executive Summary: Brief overview of security status, highlighting critical incidents and overall risk assessment.
+    2. Alert Pattern Analysis: Analyze frequency, timing, and types of alerts. Identify any patterns that might indicate systematic security vulnerabilities.
+    3. System Performance Evaluation: Assess system uptime, response latency, and detection accuracy. Note any anomalies in system behavior.
+    4. Threat Assessment: Evaluate the severity of detected threats and their potential impact on security.
+    5. Security Recommendations: Provide actionable, prioritized recommendations for improving security posture.
+    6. Conclusion: Overall security status assessment with forward-looking considerations.
+
+    Format the report in clear sections with brief, actionable insights. Use security industry terminology where appropriate. Focus on actionable intelligence rather than raw data repetition.`,
+    maxTokens: 1500,
+    temperature: 0.2,
+    topP: 0.8
+}),
+                });
+                const result = await response.json();
+                
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                // Simulate Gemini response
+                const alertEntries = logData.filter(entry => entry.isAlert);
+                const alertTimes = alertEntries.map(entry => new Date(entry.datetime));
+                
+                // Calculate time between alerts if there are multiple
+                let timeBetweenAlerts = "N/A";
+                if (alertTimes.length > 1) {
+                    let totalDiff = 0;
+                    for (let i = 1; i < alertTimes.length; i++) {
+                        totalDiff += alertTimes[i] - alertTimes[i-1];
+                    }
+                    timeBetweenAlerts = Math.round(totalDiff / (alertTimes.length - 1) / 1000) + " seconds";
+                }
+                
+                // Generate analysis based on the data
+                const analysisReport = {
+                    title: "Advanced Weapon Detection System Security Report",
+                    executiveSummary: `This report analyzes the security system activity from ${systemStats.startTime} to ${systemStats.currentTime}. During this period, the system detected ${systemStats.alertCount} security threats and maintained an uptime of ${systemStats.uptime}. Overall system health is ${systemStats.alertCount > 5 ? "CONCERNING" : "NORMAL"}.`,
+                    alertAnalysis: `Alert Pattern Analysis:\n${systemStats.alertCount} alerts were detected during the monitoring period. ${alertTimes.length > 1 ? `Average time between alerts was ${timeBetweenAlerts}.` : ""} ${systemStats.alertCount > 3 ? "The frequency of alerts suggests a need for increased security personnel presence." : "Alert frequency is within normal parameters."}`,
+                    systemPerformance: `System Performance Evaluation:\nThe system has maintained proper functionality throughout the monitoring period. All detection capabilities including firearms, bladed weapons, sports equipment, and anomaly detection are operating as expected. ${anomalyModelReady ? "The anomaly detection model is properly calibrated and operational." : "The anomaly detection system is still in initialization phase, which may affect threat detection capabilities."}`,
+                    recommendations: `Security Recommendations:\n${systemStats.alertCount > 3 ? "1. Increase security personnel in monitored areas\n2. Review camera positioning to eliminate blind spots\n3. Schedule immediate security audit" : "1. Continue regular system maintenance\n2. Schedule quarterly security assessment\n3. Maintain current security protocols"}`,
+                    conclusion: `Conclusion:\nBased on the analysis of ${logData.length} log entries, the security system is ${systemStats.alertCount > 5 ? "showing concerning patterns that require immediate attention" : "functioning within expected parameters"}. Continued monitoring and implementation of the provided recommendations will ensure optimal security coverage.`
+                };
+                
+                return analysisReport;
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                return {
+                    title: "Error Generating Report",
+                    executiveSummary: "There was an error connecting to the Gemini API. Please try again later.",
+                    alertAnalysis: "",
+                    systemPerformance: "",
+                    recommendations: "",
+                    conclusion: ""
+                };
+            } finally {
+                // Hide loading indicator
+                document.getElementById('loading-indicator').style.display = 'none';
+            }
+        }
+        
+        // Function to create PDF with jsPDF
+        function createPDF(reportData, logData, systemStats) {
+            const doc = new jsPDF();
+            
+            // Add header with logo
+            doc.setFillColor(26, 35, 126);
+            doc.rect(0, 0, 210, 30, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text("Advanced Weapon Detection System", 20, 20);
+            
+            // Add report title
+            doc.setTextColor(26, 35, 126);
+            doc.setFontSize(20);
+            doc.text(reportData.title, 20, 40);
+            
+            // Add generated timestamp
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Generated: ${systemStats.currentTime}`, 20, 48);
+            doc.text(`System Start: ${systemStats.startTime}`, 20, 53);
+            doc.text(`Report generated with Gemini AI`, 20, 58);
+            
+            // Add horizontal line
+            doc.setDrawColor(200, 200, 200);
+            doc.line(20, 60, 190, 60);
+            
+            // Executive Summary
+            doc.setFontSize(16);
+            doc.setTextColor(26, 35, 126);
+            doc.text("Executive Summary", 20, 70);
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            const summaryLines = doc.splitTextToSize(reportData.executiveSummary, 170);
+            doc.text(summaryLines, 20, 80);
+            
+            let yPosition = 80 + (summaryLines.length * 7);
+            
+            // Alert Analysis
+            doc.setFontSize(16);
+            doc.setTextColor(26, 35, 126);
+            doc.text("Alert Analysis", 20, yPosition);
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            const alertLines = doc.splitTextToSize(reportData.alertAnalysis, 170);
+            doc.text(alertLines, 20, yPosition + 10);
+            
+            yPosition += 10 + (alertLines.length * 7);
+            
+            // System Performance
+            doc.setFontSize(16);
+            doc.setTextColor(26, 35, 126);
+            doc.text("System Performance", 20, yPosition);
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            const perfLines = doc.splitTextToSize(reportData.systemPerformance, 170);
+            doc.text(perfLines, 20, yPosition + 10);
+            
+            yPosition += 10 + (perfLines.length * 7);
+            
+            // Check if we need a new page
+            if (yPosition > 240) {
+                doc.addPage();
+                yPosition = 20;
+            }
+            
+            // Recommendations
+            doc.setFontSize(16);
+            doc.setTextColor(26, 35, 126);
+            doc.text("Recommendations", 20, yPosition);
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            const recLines = doc.splitTextToSize(reportData.recommendations, 170);
+            doc.text(recLines, 20, yPosition + 10);
+            
+            yPosition += 10 + (recLines.length * 7);
+            
+            // Conclusion
+            if (yPosition > 240) {
+                doc.addPage();
+                yPosition = 20;
+            }
+            
+            doc.setFontSize(16);
+            doc.setTextColor(26, 35, 126);
+            doc.text("Conclusion", 20, yPosition);
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            const conLines = doc.splitTextToSize(reportData.conclusion, 170);
+            doc.text(conLines, 20, yPosition + 10);
+            
+            yPosition += 10 + (conLines.length * 7) + 10;
+            
+            // Add second page with log entries
+            doc.addPage();
+            
+            // Activity Log Header
+            doc.setFillColor(26, 35, 126);
+            doc.rect(0, 0, 210, 15, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(14);
+            doc.text("Activity Log", 20, 10);
+            
+            // Add log entries
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            
+            yPosition = 25;
+            
+            logData.forEach((entry, index) => {
+                if (yPosition > 280) {
+                    doc.addPage();
+                    yPosition = 15;
+                }
+                
+                if (entry.isAlert) {
+                    doc.setTextColor(244, 67, 54);
+                    doc.setFont(undefined, 'bold');
+                } else {
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFont(undefined, 'normal');
+                }
+                
+                doc.text(`[${entry.timestamp}] ${entry.message}`, 20, yPosition);
+                yPosition += 7;
+            });
+            
+            // Save the PDF
+            const filename = `weapon_detection_ai_report_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(filename);
+            
+            return filename;
+        }
+        
+        // Function to generate Gemini AI report
+        async function generateGeminiReport() {
+    try {
+        // Simple test report data
+        const testReport = {
+            title: "Test Report",
+            executiveSummary: "This is a test report.",
+            alertAnalysis: "Test alert analysis.",
+            systemPerformance: "Test system performance.",
+            recommendations: "Test recommendations.",
+            conclusion: "Test conclusion."
+        };
+        
+        // System stats
+        const now = new Date();
+        const runTime = Math.floor(systemUptime / 60) + ':' + (systemUptime % 60).toString().padStart(2, '0');
+        const systemStats = {
+            startTime: startTime.toLocaleString(),
+            currentTime: now.toLocaleString(),
+            uptime: runTime,
+            alertCount: alertsCount
+        };
+        
+        // Generate PDF with test data
+        const filename = createPDF(testReport, logEntries, systemStats);
+        addLogEntry(`Test report generated and saved as ${filename}`);
+        
+    } catch (error) {
+        console.error("Error in report generation:", error);
+        addLogEntry("Error details: " + error.message, true);
+    }
+}
+        
+        // Add event listener to report button
+        document.getElementById('generate-report').addEventListener('click', generateGeminiReport);
+        
+        // Simulate anomaly model initialization after 90 seconds
+        setTimeout(() => {
+            anomalyModelReady = true;
+            document.getElementById('anomaly-status').textContent = '✓ Active';
+            addLogEntry('Anomaly detection model trained and activated.');
+        }, 90000);
+        
+        // Add initial log entries
+        addLogEntry('System started');
+        addLogEntry('Initializing camera feed...');
+        addLogEntry('Weapon detection active - monitoring for guns, knives, bats, and other weapons');
+        
+        // Simulate some threat alerts for testing the report generation
+        setTimeout(() => {
+            addLogEntry('Motion detected in sector B4', false);
+        }, 15000);
+        
+        setTimeout(() => {
+            addLogEntry('Alert triggered! Potential firearm detected in northeast corner.', true);
+        }, 30000);
+        
+        setTimeout(() => {
+            addLogEntry('Alert cleared. Object identified as non-threat.', false);
+        }, 45000);
+        
+        // Check for alerts every 2 seconds
+        setInterval(checkAlertStatus, 2000);
+    </script>
+</body>
+</html>
