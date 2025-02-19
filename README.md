@@ -21,4 +21,5 @@ This project is an advanced **Object & Anomaly Detection** system featuring:
 - **HTML, CSS, JS**: For the frontend interface.  
 
 Contributions and feedback are welcome! 🤝
+Thank you 
 
