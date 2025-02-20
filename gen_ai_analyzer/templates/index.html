@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Analysis Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container {
+            max-width: 800px;
+            margin-top: 50px;
+        }
+        .card {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+        }
+        #file-name {
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="text-center mb-0">Text Analysis Tool</h2>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+                
+                <form action="/analyze" method="post" enctype="multipart/form-data">
+                    <div class="upload-area" id="drop-area">
+                        <p>Upload your text file for analysis</p>
+                        <input type="file" id="file-input" name="file" accept=".txt" class="d-none">
+                        <button type="button" class="btn btn-secondary" id="select-file-btn">Select File</button>
+                        <div id="file-name"></div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg">Analyze Text</button>
+                    </div>
+                </form>
+                
+                <div class="mt-4">
+                    <h5>How it works:</h5>
+                    <ol>
+                        <li>Upload a text file (.txt format)</li>
+                        <li>Our system analyzes your text using Google AI Studio</li>
+                        <li>Download a comprehensive PDF report with insights</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('select-file-btn').addEventListener('click', function() {
+            document.getElementById('file-input').click();
+        });
+        
+        document.getElementById('file-input').addEventListener('change', function() {
+            const fileName = this.files[0]?.name;
+            if (fileName) {
+                document.getElementById('file-name').textContent = "Selected file: " + fileName;
+            }
+        });
+        
+        // Drag and drop functionality
+        const dropArea = document.getElementById('drop-area');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('bg-light');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('bg-light');
+        }
+        
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length) {
+                document.getElementById('file-input').files = files;
+                document.getElementById('file-name').textContent = "Selected file: " + files[0].name;
+            }
+        }
+    </script>
+</body>
+</html>
